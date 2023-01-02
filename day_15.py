@@ -56,8 +56,65 @@ def solve_1(parsed):
     # locations)
     print(f'Part 1: {len(row) - sum(row)}')
 
+def solve_2(parsed):
+    # Note: this algorithm does assume that the beacon location is not adjacent
+    # to one of the edges of the search area and, as a result, is surrounded by
+    # (at least) four different diamonds.
+
+    # -- 1. Generate potential solutions --
+    # This list will be populated with potential solutions
+    potentials = []
+    # A dict in which each key is an x-y tuple, denoting a position, and each
+    # value is an integer, denoting the number of diamonds surrounding the
+    # position
+    pos_counts = {}
+    # For each sensor-beacon pair...
+    for pair in parsed:
+        # Find the pair's Manhattan distance
+        dist = abs(pair[2] - pair[0]) + abs(pair[3] - pair[1])
+        # Create a set of x-y tuples containing all the border positions
+        # (positions surrounding this pair's diamond)
+        top_left_border = zip(range(pair[0] - dist - 1, pair[0] + 1),
+                              range(pair[1], pair[1] - dist - 2, -1))
+        bottom_left_border = zip(range(pair[0] - dist - 1, pair[0] + 1),
+                                 range(pair[1], pair[1] + dist + 2))
+        top_right_border = zip(range(pair[0], pair[0] + dist + 2),
+                               range(pair[1] - dist - 1, pair[1] + 1))
+        bottom_right_border = zip(range(pair[0], pair[0] + dist + 2),
+                                  range(pair[1] + dist + 1, pair[1] - 1, -1))
+        border = {*top_left_border, *bottom_left_border, *top_right_border, *bottom_right_border}
+        # For each border position...
+        for pos in border:
+            # Increment the position's diamond count by one
+            if pos in pos_counts:
+                pos_counts[pos] += 1
+                # If the count has reached four, this position is touching four
+                # diamonds and could be the beacon location
+                if pos_counts[pos] == 4:
+                    potentials.append(pos)
+            else:
+                pos_counts[pos] = 1
+
+    # -- 2. Check potential solutions --
+    # For each potential solution...
+    for pos in potentials:
+        possible = True
+        # For each sensor-beacon pair...
+        for pair in parsed:
+            dist = abs(pair[2] - pair[0]) + abs(pair[3] - pair[1])
+            # If this pair excludes this position, move on to the next position
+            if abs(pos[0] - pair[0]) + abs(pos[1] - pair[1]) <= dist:
+                possible = False
+                break
+        # Since no pairs excluded this position, it is the solution
+        if possible:
+            # Calculate and print the tuning frequency
+            print(f'Part 2: {pos[0] * 4000000 + pos[1]}')
+            return
+
 
 parsed = setup()
 solve_1(parsed)
+solve_2(parsed)
 
 print(f'\nCPU execution time: {(time.process_time() - start_time) * 1000:.4f} ms')
